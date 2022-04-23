@@ -133,8 +133,22 @@ function App() {
           const { x: grid_x, y: grid_y } = pixel_pos_to_grid_pos(x, y);
           const canvas_ctx = event.currentTarget.getContext("2d");
           const pix = canvas_ctx?.getImageData(x, y, 1, 1).data;
+
           if (pix) {
-            if (color.r === pix[0] && color.g === pix[1] && color.b === pix[2])
+            // If white selected and canvas pix is alpha 0
+            if (
+              pix[3] === 0 &&
+              color.r === 255 &&
+              color.g === 255 &&
+              color.b === 255
+            )
+              return;
+            if (
+              pix[3] !== 0 &&
+              color.r === pix[0] &&
+              color.g === pix[1] &&
+              color.b === pix[2]
+            )
               return;
           }
           const packet = JSON.stringify({
