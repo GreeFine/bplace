@@ -51,10 +51,7 @@ impl Actor for MyWs {
                 .expect("unable to get lock on users_limits");
             let _ = users_limits.try_insert(
                 self.username.clone(),
-                (
-                    PIXEL_PER_USER,
-                    Utc::now().naive_utc() + Duration::hours(USER_LIMIT_RESET_HOURS),
-                ),
+                (PIXEL_PER_USER, NaiveDateTime::from_timestamp(0, 0)),
             );
         }
         let mut users = USERS.write().expect("unable to get lock on users");
