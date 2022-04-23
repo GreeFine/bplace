@@ -30,6 +30,7 @@ function App() {
   const [currentWs, setCurrentWs] = useState<WebSocket>();
   const [username_input, setUsername_input] = useState<string>();
   const [color, setColor] = useState<RGBColor>({ r: 0, g: 0, b: 0 });
+  const [pixelLimit, setPixelLimit] = useState("");
 
   useEffect(() => {
     if (!username) return;
@@ -64,6 +65,8 @@ function App() {
       const message = JSON.parse(e.data);
       if (message.error) {
         toast(message.error);
+      } else if (message.pixel_limit) {
+        setPixelLimit(message.pixel_limit);
       } else if (canvasRef.current) setPixel(message, canvasRef.current);
     };
   }, [username, canvasRef.current]);
@@ -107,23 +110,27 @@ function App() {
         draggable={false}
         pauseOnHover
       />
-      <GithubPicker
-        color={"#000"}
-        colors={[
-          "#000",
-          "#FFF",
-          "#F00",
-          "#0F0",
-          "#00F",
-          "#FF0",
-          "#0FF",
-          "#F0F",
-        ]}
-        onChangeComplete={(newColor) => {
-          setColor(newColor.rgb);
-        }}
-        className="color-picker"
-      />
+
+      <div className="color-picker">
+        <GithubPicker
+          color={"#000"}
+          colors={[
+            "#000",
+            "#FFF",
+            "#F00",
+            "#0F0",
+            "#00F",
+            "#FF0",
+            "#0FF",
+            "#F0F",
+          ]}
+          onChangeComplete={(newColor) => {
+            setColor(newColor.rgb);
+          }}
+        />
+        <span>Remaining pixels: {pixelLimit}</span>
+      </div>
+
       <canvas
         style={{ border: "1px solid black" }}
         onClick={(event) => {

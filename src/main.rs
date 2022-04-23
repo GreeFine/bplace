@@ -32,8 +32,8 @@ lazy_static! {
     pub static ref USER_LIMITS: UsersLimits = Arc::new(RwLock::new(HashMap::new()));
 }
 
-const PIXEL_PER_USER: u8 = 5;
-const USER_LIMIT_RESET_HOURS: i64 = 6;
+const PIXEL_PER_USER: u8 = 30;
+const USER_LIMIT_RESET_HOURS: i64 = 2;
 
 pub struct MyWs {
     username: String,
@@ -97,6 +97,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                         .write()
                         .expect("unable to get lock on users_limits");
                     let user_limit = users_limits[&username];
+                    let user_pixel_remaining;
                     if user_limit.1 < Utc::now().naive_utc() {
                         users_limits.insert(
                             username.clone(),
@@ -105,14 +106,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                                 Utc::now().naive_utc() + Duration::hours(USER_LIMIT_RESET_HOURS),
                             ),
                         );
+                        user_pixel_remaining = PIXEL_PER_USER - 1;
                     } else if user_limit.0 > 0 {
-                        users_limits.insert(
-                            username.clone(),
-                            (
-                                user_limit.0 - 1,
-                                Utc::now().naive_utc() + Duration::hours(USER_LIMIT_RESET_HOURS),
-                            ),
-                        );
+                        user_pixel_remaining = user_limit.0 - 1;
+                        users_limits.insert(username.clone(), (user_pixel_remaining, user_limit.1));
                     } else {
                         ctx.text(format!(
                             r#"{{"error":"Pixel limit, reset at: {}"}}"#,
@@ -120,6 +117,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                         ));
                         return;
                     }
+                    ctx.text(format!(
+                        r#"{{"pixel_limit":"{}/{}"}}"#,
+                        user_pixel_remaining, PIXEL_PER_USER
+                    ));
                 }
                 let future = async move {
                     create_pixel(pixel, username)
