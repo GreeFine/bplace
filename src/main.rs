@@ -17,7 +17,7 @@ use actix_web::{
     Responder, Result,
 };
 use actix_web_actors::ws;
-use chrono::{Duration, NaiveDateTime, Utc};
+use chrono::{format::StrftimeItems, Duration, NaiveDateTime, Utc};
 use database::{create_pixel, UserPixel};
 use env_logger::Env;
 
@@ -34,6 +34,7 @@ lazy_static! {
 
 const PIXEL_PER_USER: u8 = 30;
 const USER_LIMIT_RESET_HOURS: i64 = 2;
+const UTC_FR_DIFFERENCE: i64 = 2;
 
 pub struct MyWs {
     username: String,
@@ -103,7 +104,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                             username.clone(),
                             (
                                 PIXEL_PER_USER - 1,
-                                Utc::now().naive_utc() + Duration::hours(USER_LIMIT_RESET_HOURS),
+                                Utc::now().naive_utc()
+                                    + Duration::hours(UTC_FR_DIFFERENCE)
+                                    + Duration::hours(USER_LIMIT_RESET_HOURS),
                             ),
                         );
                         user_pixel_remaining = PIXEL_PER_USER - 1;
@@ -111,9 +114,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                         user_pixel_remaining = user_limit.0 - 1;
                         users_limits.insert(username.clone(), (user_pixel_remaining, user_limit.1));
                     } else {
+                        let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").clone();
                         ctx.text(format!(
                             r#"{{"error":"Pixel limit, reset at: {}"}}"#,
-                            user_limit.1
+                            user_limit.1.format_with_items(fmt)
                         ));
                         return;
                     }
