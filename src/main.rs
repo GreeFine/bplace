@@ -104,9 +104,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                             username.clone(),
                             (
                                 PIXEL_PER_USER - 1,
-                                Utc::now().naive_utc()
-                                    + Duration::hours(UTC_FR_DIFFERENCE)
-                                    + Duration::hours(USER_LIMIT_RESET_HOURS),
+                                Utc::now().naive_utc() + Duration::hours(USER_LIMIT_RESET_HOURS),
                             ),
                         );
                         user_pixel_remaining = PIXEL_PER_USER - 1;
@@ -117,7 +115,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                         let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").clone();
                         ctx.text(format!(
                             r#"{{"error":"Pixel limit, reset at: {}"}}"#,
-                            user_limit.1.format_with_items(fmt)
+                            (user_limit.1 + Duration::hours(UTC_FR_DIFFERENCE))
+                                .format_with_items(fmt)
                         ));
                         return;
                     }
